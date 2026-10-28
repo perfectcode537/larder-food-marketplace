@@ -141,7 +141,7 @@
   function productCard(p) {
     const s = shopById[p.shop];
     return `<article class="pcard" data-reveal>
-      <button class="pcard__media" type="button" data-quick="${p.key}" tabindex="-1" aria-hidden="true">
+      <button class="pcard__media" type="button" data-quick="${p.key}" data-cursor="View" tabindex="-1" aria-hidden="true">
         <img src="${p.img}" alt="" loading="lazy" width="640" height="640">
         ${flagHtml(p.tag)}
       </button>
@@ -156,7 +156,7 @@
 
   function shopCard(s) {
     const st = openState(s), fav = store.favs.includes(s.id);
-    return `<article class="scard" data-shop="${s.id}" data-reveal style="--c:${s.color};--ci:${s.ink}">
+    return `<article class="scard" data-shop="${s.id}" data-reveal data-cursor="Visit" style="--c:${s.color};--ci:${s.ink}">
       <div class="scard__media" data-video="${s.video}">
         <img src="${s.cover}" alt="" loading="lazy" width="1280" height="720">
         <span class="status ${st.open ? 'is-open' : ''}"><i></i>${st.label}</span>
@@ -203,6 +203,15 @@
   const onCleanup = fn => cleanups.push(fn);
 
   // ---------- HOME
+  // the home page film: one day on the high street, scrubbed by scroll (at = minutes past midnight)
+  const FILM = [
+    { id: 'dough', at: 340, tag: 'Bake', shop: 'crumb', title: 'The ovens go on', line: 'The first sourdough is shaped while the street is still dark.' },
+    { id: 'crates', at: 450, tag: 'Stock', shop: 'patch', title: 'Crates come in', line: 'Picked yesterday afternoon, sorted and priced before the doors open at nine.' },
+    { id: 'courier', at: 735, tag: 'Ride', title: 'One rider, every shop', line: 'Sam collects from four counters on one loop, then rings your bell.' },
+    { id: 'wine', at: 1140, tag: 'Pour', shop: 'cellar', title: 'Something for later', line: 'Low Cellar is open till late. Supper, sorted.' },
+  ];
+  const hhmm = m => { const t = Math.round(m); return `${String(Math.floor(t / 60) % 24).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; };
+
   function viewHome() {
     const near = [...D.shops].sort((a, b) => a.dist - b.dist).slice(0, 6);
     const featured = ['crumb:croissant', 'underwood:chanterelles', 'rind:comte', 'saltline:seabass', 'patch:squash', 'ring:sprinkle', 'fiorella:tagliatelle', 'hive:wildflower', 'cellar:gamay', 'nib:bar70', 'saffron:spicebox', 'ember:espresso'].map(k => D.products[k]).filter(Boolean);
@@ -223,13 +232,14 @@
       { s: shopById.fiorella, media: `<video data-src="assets/video/fiorella.mp4" poster="assets/img/poster/fiorella.webp" muted loop playsinline></video>` },
     ];
     const howItems = [['crumb', 'crumb:sourdough'], ['rind', 'rind:comte'], ['patch', 'patch:tomatoes']];
+    const filmWords = t => t.split(' ').map((w, i) => `<span class="w"><span class="wi" style="--i:${i}">${esc(w)}</span></span>`).join(' ');
 
     const html = `
     <section class="hero">
       <div class="wrap hero__grid">
         <div class="hero__copy">
           <p class="eyebrow" data-reveal><span class="pulse"></span>Delivering across east London · ${D.shops.length} independents</p>
-          <h1 class="display hero__title" data-split>The whole high street, <em>in one basket.</em></h1>
+          <h1 class="display hero__title" data-split>The whole high street, <em data-flex>in one basket.</em></h1>
           <p class="lede" data-reveal>Sourdough from the bakehouse, a wedge from the cheesemonger, day-boat fish off the slab. Shop as many independents as you like and one courier collects the lot, at your door in about 40 minutes.</p>
           <form class="finder" data-finder data-reveal>
             <label class="finder__field">${icon('pin')}<span class="sr">Your postcode</span><input name="postcode" value="${esc(store.postcode)}" autocomplete="postal-code" spellcheck="false" maxlength="8"></label>
@@ -283,7 +293,7 @@
         <p class="kicker" data-reveal><span>01</span> Browse the high street</p>
         <h2 class="display" data-split>What are you <em>after today?</em></h2>
       </header>
-      <div class="cats__rail" data-drag>
+      <div class="cats__rail" data-drag data-cursor="Drag">
         ${D.categories.map((c, i) => `
           <a class="cat" href="#/shops?cat=${c.id}" data-reveal style="--i:${i}">
             <span class="cat__disc">
@@ -344,7 +354,47 @@
           <button class="icon-btn" type="button" data-rail-next aria-label="Scroll forward">${icon('arrow')}</button>
         </div>
       </header>
-      <div class="rail" data-rail data-drag>${featured.map(productCard).join('')}</div>
+      <div class="rail" data-rail data-drag data-cursor="Drag">${featured.map(productCard).join('')}</div>
+    </section>
+
+    <section class="film" data-film aria-labelledby="filmTitle">
+      <div class="film__sticky">
+        <h2 class="sr" id="filmTitle">From first loaf to last pour: a day on the high street</h2>
+        <p class="kicker film__kicker" aria-hidden="true">A day on the high street</p>
+        <div class="film__words" aria-hidden="true">
+          <p class="film__l"><span>From first</span> <em>loaf</em></p>
+          <p class="film__r"><span>to last</span> <em>pour.</em></p>
+        </div>
+        <p class="film__hint" aria-hidden="true"><i></i>Scroll to start the day</p>
+        <i class="film__probe" aria-hidden="true"></i>
+        <div class="film__frame">
+          <div class="film__media" aria-hidden="true">
+            ${FILM.map((f, i) => `<video class="${i ? '' : 'is-on'}" data-film-v data-src="assets/video/film/${f.id}.mp4" poster="assets/img/film/${f.id}.webp" muted loop playsinline preload="none"></video>`).join('')}
+          </div>
+          <div class="film__shade"></div>
+          <div class="film__ui wrap">
+            <div class="film__clock" aria-hidden="true">
+              <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="47" class="film__face"/>
+                ${Array.from({ length: 12 }, (_, i) => `<line x1="50" y1="${i % 3 ? 9 : 7}" x2="50" y2="${i % 3 ? 13 : 16}" transform="rotate(${i * 30} 50 50)"/>`).join('')}
+                <line x1="50" y1="50" x2="50" y2="27" class="film__hand film__hand--h" data-hand="h"/>
+                <line x1="50" y1="50" x2="50" y2="15" class="film__hand film__hand--m" data-hand="m"/>
+                <circle cx="50" cy="50" r="3.4" class="film__pin"/>
+              </svg>
+              <p><b data-film-time>${hhmm(FILM[0].at)}</b><small>East London, today</small></p>
+            </div>
+            <div class="film__caps">
+              ${FILM.map((f, i) => { const s = f.shop && shopById[f.shop]; return `<div class="film__cap${i ? '' : ' is-on'}" data-cap>
+                <p class="film__where">${hhmm(f.at)} · ${s ? `${esc(s.name)}, ${esc(s.area)}` : 'Somewhere in E8'}</p>
+                <h3 class="film__title">${filmWords(f.title)}</h3>
+                <p class="film__line">${esc(f.line)}</p>
+                ${s ? `<a class="link-arrow film__link" href="#/shop/${s.id}">Visit ${esc(s.name)} ${icon('arrow')}</a>` : `<a class="link-arrow film__link" href="#/shops">Fill a basket ${icon('arrow')}</a>`}
+              </div>`; }).join('')}
+            </div>
+            <ol class="film__bars" aria-hidden="true">${FILM.map(f => `<li><i></i><span>${hhmm(f.at)}</span>${esc(f.tag)}</li>`).join('')}</ol>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="season wrap">
@@ -509,6 +559,112 @@
     onScroll(onHow);
     onHow();
 
+    // the film: an arch window opens to full screen, then scroll runs the clock through four chapters
+    const film = $('[data-film]', root);
+    const fSticky = $('.film__sticky', film);
+    const fFrame = $('.film__frame', film);
+    const fVids = $$('[data-film-v]', film);
+    const fCaps = $$('[data-cap]', film);
+    const fBars = $$('.film__bars li', film);
+    const fTime = $('[data-film-time]', film);
+    const hourHand = $('[data-hand="h"]', film), minHand = $('[data-hand="m"]', film);
+    const fProbe = $('.film__probe', film);
+    const smooth = t => t * t * (3 - 2 * t);
+    let chap = -1, filmSeen = false, lastMins = -1, fw = 0, fh = 0;
+    const measureFilm = () => { fw = fProbe.offsetWidth; fh = fProbe.offsetHeight; };
+    // only the current chapter plays; the next one preloads once the film is on screen
+    const syncFilm = () => fVids.forEach((v, j) => {
+      if (filmSeen && j === chap + 1 && !v.src && !reduce) { v.preload = 'auto'; v.src = v.dataset.src; }
+      if (j === chap && filmSeen) playVideo(v); else if (!v.paused) v.pause();
+    });
+    const setChap = i => {
+      chap = i;
+      fVids.forEach((v, j) => v.classList.toggle('is-on', j === i));
+      fCaps.forEach((c, j) => { c.classList.toggle('is-on', j === i); c.classList.toggle('is-past', j < i); });
+      syncFilm();
+    };
+    const onFilm = () => {
+      const r = film.getBoundingClientRect();
+      const vh = innerHeight, vw = document.documentElement.clientWidth;
+      const p = clamp(-r.top / ((film.offsetHeight - vh) || 1), 0, 1);
+      const seen = r.bottom > 0 && r.top < vh;
+      // window opening
+      const e = reduce ? 1 : smooth(clamp(p / 0.15, 0, 1));
+      const ti = ((vh - fh) / 2) * (1 - e), li = ((vw - fw) / 2) * (1 - e), rt = (fw / 2) * (1 - e), rb = 18 * (1 - e);
+      fFrame.style.clipPath = `inset(${ti.toFixed(1)}px ${li.toFixed(1)}px ${ti.toFixed(1)}px ${li.toFixed(1)}px round ${rt.toFixed(1)}px ${rt.toFixed(1)}px ${rb.toFixed(1)}px ${rb.toFixed(1)}px)`;
+      fSticky.style.setProperty('--e', e.toFixed(4));
+      fFrame.classList.toggle('is-open', e > 0.96);
+      // chapters: the clock holds on each one, then spins forward to the next
+      const n = FILM.length;
+      const q = clamp((p - 0.17) / 0.8, 0, 0.9999) * n;
+      const i = Math.floor(q), u = q - i;
+      let mins = FILM[i].at;
+      if (i < n - 1) mins += (FILM[i + 1].at - FILM[i].at) * smooth(clamp((u - 0.6) / 0.4, 0, 1));
+      if (i !== chap) setChap(i);
+      fBars.forEach((b, j) => b.style.setProperty('--f', j < i ? 1 : j === i ? u.toFixed(3) : 0));
+      if (Math.round(mins) !== lastMins) {
+        lastMins = Math.round(mins);
+        fTime.textContent = hhmm(mins);
+        hourHand.setAttribute('transform', `rotate(${((mins / 720) * 360).toFixed(2)} 50 50)`);
+        minHand.setAttribute('transform', `rotate(${((mins % 60) * 6).toFixed(2)} 50 50)`);
+      }
+      if (seen !== filmSeen) { filmSeen = seen; syncFilm(); }
+    };
+    const onFilmResize = () => { measureFilm(); onFilm(); };
+    onScroll(onFilm);
+    addEventListener('resize', onFilmResize);
+    onCleanup(() => removeEventListener('resize', onFilmResize));
+    onFilmResize();
+
+    // hero: the shopfront leans towards the pointer and the price tags swing on their strings
+    const hero = $('.hero', root);
+    const heroStage = $('.hero__stage', hero);
+    if (finePointer && !reduce && heroStage) {
+      const facade = $('.facade', heroStage), sticker = $('.sticker', heroStage), liveCard = $('.live', heroStage);
+      const tags = $$('.hang', heroStage).map((el, i) => ({ el, a: 0, v: 0, ph: i * 2.1 }));
+      heroStage.classList.add('is-live');
+      let tx = 0, ty = 0, cx = 0, cy = 0, lastX = null, last = 0, raf = 0;
+      hero.addEventListener('pointermove', e => {
+        const r = heroStage.getBoundingClientRect();
+        tx = clamp((e.clientX - r.left) / r.width - 0.5, -0.8, 0.8);
+        ty = clamp((e.clientY - r.top) / r.height - 0.5, -0.8, 0.8);
+        if (lastX !== null) {
+          const dx = e.clientX - lastX;
+          tags.forEach(t => {
+            const tr = t.el.getBoundingClientRect();
+            const d = Math.hypot(e.clientX - (tr.left + tr.width / 2), e.clientY - (tr.top + tr.height / 2));
+            if (d < 200) t.v = clamp(t.v + dx * 7 * (1 - d / 200), -260, 260);
+          });
+        }
+        lastX = e.clientX;
+      });
+      hero.addEventListener('pointerleave', () => { tx = ty = 0; lastX = null; });
+      const loop = now => {
+        raf = requestAnimationFrame(loop);
+        const dt = Math.min(0.04, (now - (last || now)) / 1000);
+        last = now;
+        cx += (tx - cx) * 0.07;
+        cy += (ty - cy) * 0.07;
+        facade.style.transform = `rotateY(${(cx * 11).toFixed(2)}deg) rotateX(${(-cy * 7).toFixed(2)}deg)`;
+        sticker.style.translate = `${(cx * 38).toFixed(1)}px ${(cy * 26).toFixed(1)}px`;
+        liveCard.style.translate = `${(cx * -26).toFixed(1)}px ${(cy * -16).toFixed(1)}px`;
+        tags.forEach(t => {
+          // damped spring plus a light breeze so they never fall completely still
+          const breeze = Math.sin(now / 800 + t.ph) * 95;
+          t.v += (-24 * t.a - 2.4 * t.v + breeze) * dt;
+          t.a = clamp(t.a + t.v * dt, -40, 40);
+          t.el.style.transform = `rotate(${t.a.toFixed(2)}deg)`;
+        });
+      };
+      const io = new IntersectionObserver(([en]) => {
+        cancelAnimationFrame(raf);
+        last = 0;
+        if (en.isIntersecting) raf = requestAnimationFrame(loop);
+      });
+      io.observe(hero);
+      onCleanup(() => { io.disconnect(); cancelAnimationFrame(raf); });
+    }
+
     // rail arrows + drag
     const rail = $('[data-rail]', root);
     const step = () => Math.min(rail.clientWidth * 0.8, 900);
@@ -602,7 +758,7 @@
         </div>
       </div>
     </section>`;
-    return { html, title: 'Shops near you', mount: mountShops };
+    return { html, title: 'Shops near you', label: 'Every shop', mount: mountShops };
   }
 
   function mountShops(root, q) {
@@ -650,7 +806,7 @@
         if (ok && hits.length) { m.hidden = false; m.innerHTML = `${icon('search')} ${hits.slice(0, 2).map(h => esc(h.name)).join(', ')}${hits.length > 2 ? ` +${hits.length - 2}` : ''}`; } else m.hidden = true;
         if (ok) visible.push(s);
       });
-      if (flipState) Flip.from(flipState, { duration: 0.6, ease: 'expo.out', absolute: true, scale: true, onEnter: els => gsap.fromTo(els, { opacity: 0, scale: 0.92 }, { opacity: 1, scale: 1, duration: 0.5 }), onLeave: els => gsap.to(els, { opacity: 0, scale: 0.92, duration: 0.3 }) });
+      if (flipState) Flip.from(flipState, { duration: 0.6, ease: 'expo.out', absolute: true, scale: true, onEnter: els => gsap.fromTo(els, { opacity: 0, scale: 0.92 }, { opacity: 1, scale: 1, duration: 0.5, clearProps: 'transform,opacity' }), onLeave: els => gsap.to(els, { opacity: 0, scale: 0.92, duration: 0.3 }) });
       $('[data-result-count]', root).textContent = `${visible.length} shop${visible.length === 1 ? '' : 's'}`;
       empty.hidden = visible.length > 0;
       grid.hidden = state.view !== 'grid' || !visible.length;
@@ -1206,7 +1362,7 @@
       </div>
       <p class="track__demo">Demo mode: the whole journey plays out in about 80 seconds.</p>
     </section>`;
-    return { html, title: 'Order ' + o.id, mount: root => mountOrder(root, o, route, shopsOnRoute) };
+    return { html, title: 'Order ' + o.id, label: 'Your order', mount: root => mountOrder(root, o, route, shopsOnRoute) };
   }
 
   function mountOrder(root, o, route, shopsOnRoute) {
@@ -1575,7 +1731,7 @@
     if (!view) view = viewNotFound();
     closeAll();
     const animate = !firstLoad && hasGsap && !reduce;
-    if (animate) await curtain(true);
+    if (animate) await curtain(true, view.label || view.title || 'The high street');
     if (token !== navToken) return;
     teardown();
     app.innerHTML = view.html;
@@ -1586,6 +1742,7 @@
     document.documentElement.classList.toggle('nav-on-dark', !!view.dark);
     if (view.mount) view.mount(app, q);
     initMotion(app);
+    $$('[data-flex]', app).forEach(el => { const off = flexType(el); if (off) onCleanup(off); });
     lazyVideos(app);
     if (animate) curtain(false);
     if (!firstLoad) app.focus({ preventScroll: true });
@@ -1598,15 +1755,25 @@
     $$('video', app).forEach(v => { v.pause(); v.removeAttribute('src'); v.load(); });
   }
 
-  function curtain(cover) {
+  // the shutter drops with the destination's name on it, then rolls back up over the new page
+  function curtain(cover, label) {
     const c = $('#curtain');
-    const bars = $$('span', c);
+    const panel = $('.curtain__panel', c), word = $('.curtain__word', c), sub = $('.curtain__sub', c);
     return new Promise(res => {
+      gsap.killTweensOf([panel, word, sub]);
       if (cover) {
+        word.textContent = label;
         c.classList.add('is-on');
-        gsap.fromTo(bars, { scaleY: 0, transformOrigin: '50% 0%' }, { scaleY: 1, duration: 0.42, stagger: 0.04, ease: 'power3.inOut', onComplete: res });
+        gsap.timeline({ onComplete: res })
+          .fromTo(panel, { yPercent: -100, y: -60 }, { yPercent: 0, y: 0, duration: 0.62, ease: 'expo.inOut' })
+          .fromTo(word, { yPercent: 110, rotate: 3 }, { yPercent: 0, rotate: 0, duration: 0.55, ease: 'expo.out' }, 0.32)
+          .fromTo(sub, { opacity: 0, y: 8 }, { opacity: 0.65, y: 0, duration: 0.4 }, 0.38)
+          .to({}, { duration: 0.12 });
       } else {
-        gsap.to(bars, { scaleY: 0, transformOrigin: '50% 100%', duration: 0.5, stagger: 0.04, ease: 'power3.inOut', delay: 0.05, onComplete: () => { c.classList.remove('is-on'); res(); } });
+        gsap.timeline({ onComplete: () => { c.classList.remove('is-on'); res(); } })
+          .to(word, { yPercent: -110, duration: 0.4, ease: 'expo.in' })
+          .to(sub, { opacity: 0, duration: 0.25 }, 0)
+          .to(panel, { yPercent: -100, y: -60, duration: 0.75, ease: 'expo.inOut' }, 0.12);
       }
     });
   }
@@ -1697,9 +1864,23 @@
       });
     });
     const introDelay = firstLoad ? INTRO + 0.1 : 0.1;
+    // hand transforms back to CSS once revealed so hover lifts and tilts work
+    const revealed = els => { els.forEach(el => el.classList.add('is-in')); gsap.set(els, { clearProps: 'transform,opacity' }); };
     ScrollTrigger.batch($$('[data-reveal]:not([data-reveal="clip"])', root), {
       start: 'top 92%', once: true,
-      onEnter: els => gsap.to(els, { opacity: 1, y: 0, duration: 1, ease: 'expo.out', stagger: 0.07, overwrite: true, delay: els[0].closest('.hero, .shop-hero, .sell-hero') ? introDelay : 0 }),
+      onEnter: els => {
+        // a fast jump hands over everything scrolled past: show those at once so the stagger
+        // is spent only on what is on screen
+        const passed = els.filter(el => el.getBoundingClientRect().bottom < 0);
+        if (passed.length) revealed(passed);
+        const show = els.filter(el => !passed.includes(el));
+        if (!show.length) return;
+        gsap.to(show, {
+          opacity: 1, y: 0, duration: 1, ease: 'expo.out', stagger: Math.min(0.07, 0.6 / show.length), overwrite: true,
+          delay: show[0].closest('.hero, .shop-hero, .sell-hero') ? introDelay : 0,
+          onComplete: () => revealed(show),
+        });
+      },
     });
     $$('[data-reveal="clip"]', root).forEach(el => {
       gsap.fromTo(el, { clipPath: 'inset(12% 8% 12% 8% round 28px)', opacity: 0.4 }, {
@@ -1709,6 +1890,10 @@
     });
     $$('[data-parallax]', root).forEach(el => {
       gsap.fromTo(el, { yPercent: -7 }, { yPercent: 7, ease: 'none', scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'bottom top', scrub: true } });
+    });
+    // shop header footage sinks and pushes in as you scroll past it
+    $$('.shop-hero', root).forEach(el => {
+      gsap.to($('.shop-hero__media', el), { yPercent: 18, scale: 1.08, ease: 'none', scrollTrigger: { trigger: el, start: 'top top', end: 'bottom top', scrub: true } });
     });
     $$('[data-count]', root).forEach(el => {
       const o = { v: 0 }, end = +el.dataset.count;
@@ -1754,7 +1939,7 @@
     if (vidIO) vidIO.disconnect();
     vidIO = new IntersectionObserver(entries => entries.forEach(en => {
       const v = en.target;
-      if (v.closest('[data-makers]')) return; // the makers carousel drives its own videos
+      if (v.closest('[data-makers], [data-film]')) return; // the makers carousel and the film drive their own videos
       if (en.isIntersecting) playVideo(v); else v.pause();
     }), { rootMargin: '120px' });
     $$('video[data-src]', root).forEach(v => vidIO.observe(v));
@@ -1778,6 +1963,105 @@
       const v = $('.scard__media video', card);
       if (v) setTimeout(() => { if (!card.classList.contains('is-playing')) v.pause(); }, 400);
     });
+  }
+
+  // cards tilt towards the pointer with a soft sheen
+  if (finePointer && !reduce) {
+    let tilted = null;
+    const untilt = () => { if (tilted) { ['--rx', '--ry'].forEach(p => tilted.style.removeProperty(p)); tilted = null; } };
+    document.addEventListener('pointermove', e => {
+      const card = e.pointerType === 'mouse' && e.target.closest('.scard, .pcard');
+      if (card !== tilted) untilt();
+      if (!card || card.closest('.is-dragging')) return;
+      tilted = card;
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      card.style.setProperty('--rx', ((0.5 - y) * 6).toFixed(2) + 'deg');
+      card.style.setProperty('--ry', ((x - 0.5) * 8).toFixed(2) + 'deg');
+      card.style.setProperty('--mx', (x * 100).toFixed(1) + '%');
+      card.style.setProperty('--my', (y * 100).toFixed(1) + '%');
+    }, { passive: true });
+    document.documentElement.addEventListener('pointerleave', untilt);
+  }
+
+  // variable-font letters that thicken and soften as the pointer comes near
+  function flexType(el, radius = 240, lift = 300) {
+    if (!finePointer || reduce || el.dataset.flexDone) return null;
+    el.dataset.flexDone = '1';
+    const walk = node => [...node.childNodes].forEach(n => {
+      if (n.nodeType === 3) {
+        const frag = document.createDocumentFragment();
+        [...n.textContent].forEach(ch => {
+          if (/\s/.test(ch)) { frag.appendChild(document.createTextNode(ch)); return; }
+          const s = document.createElement('span');
+          s.className = 'ch';
+          s.textContent = ch;
+          frag.appendChild(s);
+        });
+        n.replaceWith(frag);
+      } else if (n.nodeType === 1) walk(n);
+    });
+    walk(el);
+    const base = parseFloat(getComputedStyle(el).fontWeight) || 400;
+    const peak = Math.min(800, base + lift);
+    const chars = $$('.ch', el).map(c => ({ c, w: base }));
+    let px = -1e5, py = -1e5, raf = 0;
+    const tick = () => {
+      raf = 0;
+      let busy = false;
+      chars.forEach(o => {
+        const r = o.c.getBoundingClientRect();
+        const d = Math.hypot(px - (r.left + r.width / 2), py - (r.top + r.height / 2));
+        const f = Math.max(0, 1 - d / radius);
+        const target = base + (peak - base) * f * f * (3 - 2 * f);
+        o.w += (target - o.w) * 0.16;
+        if (Math.abs(target - o.w) > 0.6) busy = true;
+        o.c.style.fontVariationSettings = `'wght' ${o.w.toFixed(1)}, 'SOFT' 100, 'WONK' 1`;
+      });
+      if (busy) raf = requestAnimationFrame(tick);
+    };
+    const move = e => { px = e.clientX; py = e.clientY; if (!raf) raf = requestAnimationFrame(tick); };
+    addEventListener('pointermove', move, { passive: true });
+    return () => { removeEventListener('pointermove', move); cancelAnimationFrame(raf); };
+  }
+  $$('.foot [data-flex]').forEach(el => flexType(el, 320, 260));
+
+  // a label that follows the mouse over things you can drag, open or look at
+  if (finePointer && !reduce) {
+    const cur = document.createElement('div');
+    cur.className = 'cursor';
+    cur.setAttribute('aria-hidden', 'true');
+    cur.innerHTML = '<span></span>';
+    document.body.appendChild(cur);
+    const label = cur.firstChild;
+    let x = 0, y = 0, cx = 0, cy = 0, on = false, raf = 0;
+    const follow = () => {
+      cx += (x - cx) * 0.24;
+      cy += (y - cy) * 0.24;
+      cur.style.transform = `translate3d(${cx.toFixed(1)}px, ${cy.toFixed(1)}px, 0)`;
+      raf = Math.abs(x - cx) + Math.abs(y - cy) > 0.2 ? requestAnimationFrame(follow) : 0;
+    };
+    const set = want => {
+      if (want && label.textContent !== want) label.textContent = want;
+      if (!!want === on) return;
+      on = !!want;
+      if (on) { cx = x; cy = y; }
+      cur.classList.toggle('is-on', on);
+      document.documentElement.classList.toggle('cursor-on', on);
+    };
+    document.addEventListener('pointermove', e => {
+      if (e.pointerType !== 'mouse') return;
+      x = e.clientX;
+      y = e.clientY;
+      const host = e.target.closest('[data-cursor]');
+      const ctl = host && e.target.closest('button, input, select, textarea, label, .fav');
+      set(host && !(ctl && ctl !== host && host.contains(ctl)) ? host.dataset.cursor : '');
+      if (!raf) raf = requestAnimationFrame(follow);
+    }, { passive: true });
+    document.addEventListener('pointerdown', () => cur.classList.add('is-down'));
+    document.addEventListener('pointerup', () => cur.classList.remove('is-down'));
+    document.documentElement.addEventListener('pointerleave', () => set(''));
+    addEventListener('hashchange', () => set(''));
   }
 
   /* --------------------------------------------------------- global UI */
